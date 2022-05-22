@@ -8,6 +8,7 @@ output_avinput_path = "../data/output/avinput_files/"
 
 snp_splits = os.listdir(final_snp_path)
 i = 0
+line_count = 0
 for split in tqdm(snp_splits):
     split_path = final_snp_path + split
     if os.path.isdir(split_path):
@@ -26,6 +27,7 @@ for split in tqdm(snp_splits):
         result["Continent"] = data["region"]
         result["pango_lineage"] = data["pangolin_lineage"]
         result["GISAID_clade"] = data["GISAID_clade"]
-
+        line_count += len(result)
         result.to_csv(output_avinput_path + "avinput_" + str(i) +".tsv", index = False, sep = "\t")
         i += 1
+print(line_count)
