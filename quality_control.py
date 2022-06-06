@@ -13,7 +13,7 @@ def partial_count(file_name):
     with open(file_name) as f:
         return sum(x.count('\n') for x in iter(partial(f.read, buffer), ''))
 
-def quality_control(file_path, output_path, month):
+def quality_control(file_path, output_path, month, meta_file_path):
     strain_count = 0
     indexs = []
     end_quality_num = 0
@@ -25,6 +25,8 @@ def quality_control(file_path, output_path, month):
                 indexs.append(i)
                 strain_count += 1
         indexs.append(line_count)
+    
+    metadata_pd = pd.read_csv(meta_file_path, sep="\t")
 
     with open(file_path) as file:
         context = file.readlines()
@@ -33,8 +35,16 @@ def quality_control(file_path, output_path, month):
         for i in range(len(indexs) - 1):
             lines = context[indexs[i]:indexs[i+1]]
             line_length = len(lines)
-            header_arr = lines[0].split('/')
-            new_header = header_arr[0] + "|" + header_arr[2] + "|" + header_arr[3].strip() + "|" + header_arr[1] + "\n"
+            header = lines[0]
+            header = header[1:].strip()
+            # print(header)
+            header_line = metadata_pd.loc[metadata_pd["strain"] == header].copy()
+            if len(header_line.iloc[0]) != 0:
+                new_header = ">hCoV-19|" + header_line.iloc[0]["gisaid_epi_isl"] + "|" + header_line.iloc[0]["date"] + "|" + header_line.iloc[0]["country"] + "\n"
+            else:
+                print(header, header_line)
+                break
+            # print(new_header)
             c = Counter(lines[1].strip())
             for j in range(line_length-2):
                 c.update(lines[j+2].strip())
@@ -72,12 +82,14 @@ for split in tqdm(splits):
         month = split
         files = os.listdir(split_path)
         for file in files:
+            file_id = file.split(".")[0]
             file_name = file.split('.')[1]
             file_type = file.split('.')[2]
             if file_type == 'fasta' and file_name == 'sequences':
                 print(file)
                 file_path = split_path + "/" + file
-                quality_control(file_path, split_path, month)
+                meta_file_path = split_path + "/" + file_id + ".metadata.tsv"
+                quality_control(file_path, split_path, month, meta_file_path)
 
 result = pd.DataFrame(result)
 result.to_csv(input_files_path+"quality_amount.tsv",index = False, sep = "\t")

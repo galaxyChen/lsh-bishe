@@ -45,18 +45,21 @@ for split in splits:
     continent, month = group.split("-")
     month = month[0:4] + "-" + month[4:]
     print(continent, month)
+    keys = continent_change_dict[continent].keys()
     data = pd.read_csv(continent_month_input_path + split, sep="\t")
     data["bp_change"] = data.apply(get_bp_change,axis=1)
     change_series = data["bp_change"].value_counts(normalize=True)
     change_indexs = np.array(change_series.keys())
+    # print(change_indexs)
     if "0<0" in change_indexs:
-        change_series = change_series.drop("0<0")    
-    for i in range(len(change_indexs)):
-        keys = np.array(continent_change_dict[continent].keys())
+        change_series = change_series.drop("0<0") 
+    temp_dict = {}
+    for i in change_indexs:
         if i in keys:
             continent_change_dict[continent][i].append(change_series[i])
         else:
             continent_change_dict[continent][i] = [change_series[i]]
+    print(continent_change_dict[continent])
     # print(change_series)
 
 for continent in continent_change_dict:
@@ -64,8 +67,10 @@ for continent in continent_change_dict:
     data = []
     print(continent)
     for i in continent_change_dict[continent]:
-        labels.append(str(i))
-        data.append(continent_change_dict[continent][i])
+        print(i)
+        if str(i) != "nan>nan":
+            labels.append(str(i))
+            data.append(continent_change_dict[continent][i])
     print(labels)
     plt.figure()
     plt.boxplot(data, labels=labels, vert=True)
